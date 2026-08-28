@@ -1,36 +1,37 @@
-# BlazePort - Simple Python Port Scanner
+# BlazePort
 
-BlazePort is a fast, efficient, and lightweight TCP port scanner built in Python.  
-It includes banner grabbing, basic service detection, multithreading for performance, and supports CLI parameters.
-
----
+A lightweight Python TCP port scanner for **authorized security testing and learning**.
 
 ## Features
-- Multithreaded TCP port scanning
-- Banner grabbing for open ports
-- Automatic service detection based on common port numbers
-- Command-line interface (CLI) support
-- Colored output for better readability
-- Export results to `.txt` and `.csv`
-- Clean, modular and extensible code
 
----
+- Concurrent TCP connect scanning with a bounded worker pool
+- Hostname resolution and basic service identification
+- Optional banner grabbing
+- Configurable timeout, range, and worker count
+- TXT and CSV result exports
+- Defensive validation of CLI parameters
 
 ## Usage
 
+Python 3.9+ is required; there are no third-party dependencies.
+
 ```bash
-python blazeport.py --target <target_ip_or_hostname> --start-port <start_port> --end-port <end_port>
+git clone https://github.com/Blazebropwn/Blazeport.git
+cd Blazeport
+python blazeport.py --target 127.0.0.1 --start-port 1 --end-port 1024
 ```
 
-Results will be saved in `scan_results.txt` and `scan_results.csv`.
+Optional banner grabbing and concurrency tuning:
 
----
+```bash
+python blazeport.py --target 127.0.0.1 --start-port 20 --end-port 443 --banner
+python blazeport.py --target 127.0.0.1 --workers 50 --timeout 0.8
+```
 
-## Disclaimer
-> This tool is intended for **educational and authorized security testing only**.  
-> Unauthorized scanning of networks that you do not own or have explicit permission to test is **illegal and unethical**.
+## Responsible use
 
----
+Use BlazePort only on systems you own or have explicit permission to test. Unauthorized port scanning may violate policies or laws and can trigger monitoring systems.
 
 ## License
-MIT License
+
+MIT
