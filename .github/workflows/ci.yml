@@ -22,5 +22,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest
       - run: python -m compileall -q blazeport.py
       - run: python blazeport.py --help

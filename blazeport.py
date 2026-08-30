@@ -8,6 +8,7 @@ import csv
 import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from itertools import islice
 from pathlib import Path
 
 
@@ -27,13 +28,15 @@ def service_name(port: int) -> str:
         return "unknown"
 
 
-def scan_port(host: str, ip: str, port: int, timeout: float, grab_banner: bool) -> ScanResult | None:
+def scan_port(host: str, ip: str, port: int, timeout: float, probe: str) -> ScanResult | None:
     try:
         with socket.create_connection((ip, port), timeout=timeout) as sock:
             banner = ""
-            if grab_banner:
+            if probe != "none":
                 sock.settimeout(timeout)
                 try:
+                    if probe == "http":
+                        sock.sendall(f"HEAD / HTTP/1.0\r\nHost: {host}\r\n\r\n".encode())
                     banner = sock.recv(1024).decode(errors="replace").strip()
                 except (socket.timeout, OSError):
                     pass
@@ -65,8 +68,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--end-port", type=int, default=1024, help="Last port (default: 1024)")
     parser.add_argument("--timeout", type=float, default=0.5, help="Connection timeout in seconds")
     parser.add_argument("--workers", type=int, default=100, help="Maximum concurrent workers")
-    parser.add_argument("--banner", action="store_true", help="Attempt basic banner grabbing")
-    parser.add_argument("--output", default="scan_results", help="Output filename prefix")
+    parser.add_argument("--probe", choices=("none", "passive", "http"), default="none", help="Optional banner probe")
+    parser.add_argument("--output", help="Optional output filename prefix")
     return parser
 
 
@@ -88,24 +91,29 @@ def main() -> int:
     args = parser.parse_args()
     validate_args(parser, args)
     try:
-        ip = socket.gethostbyname(args.target)
+        addresses = socket.getaddrinfo(args.target, None, type=socket.SOCK_STREAM)
+        ip = addresses[0][4][0]
     except socket.gaierror as exc:
         parser.error(f"Could not resolve target: {exc}")
     print(f"Scanning {args.target} ({ip}) ports {args.start_port}-{args.end_port}")
     print("Use only on systems you own or have explicit permission to test.\n")
     results: list[ScanResult] = []
+    ports = iter(range(args.start_port, args.end_port + 1))
+    batch_size = args.workers * 2
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
-        futures = [executor.submit(scan_port, args.target, ip, port, args.timeout, args.banner) for port in range(args.start_port, args.end_port + 1)]
-        for future in as_completed(futures):
-            result = future.result()
-            if result is not None:
-                results.append(result)
-                suffix = f" | {result.banner}" if result.banner else ""
-                print(f"OPEN {result.port:<5} {result.service}{suffix}")
+        while batch := list(islice(ports, batch_size)):
+            futures = [executor.submit(scan_port, args.target, ip, port, args.timeout, args.probe) for port in batch]
+            for future in as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    results.append(result)
+                    suffix = f" | {result.banner}" if result.banner else ""
+                    print(f"OPEN {result.port:<5} {result.service}{suffix}")
     results.sort(key=lambda item: item.port)
-    txt_path, csv_path = save_results(results, args.output)
     print(f"\nFound {len(results)} open port(s).")
-    print(f"Saved: {txt_path} and {csv_path}")
+    if args.output:
+        txt_path, csv_path = save_results(results, args.output)
+        print(f"Saved: {txt_path} and {csv_path}")
     return 0
 
 
