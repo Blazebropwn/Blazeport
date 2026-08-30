@@ -26,7 +26,7 @@ python blazeport.py --target 127.0.0.1 --start-port 1 --end-port 1024
 Optional banner grabbing and concurrency tuning:
 
 ```bash
-python blazeport.py --target 127.0.0.1 --start-port 20 --end-port 443 --banner
+python blazeport.py --target 127.0.0.1 --start-port 20 --end-port 443 --probe http
 python blazeport.py --target 127.0.0.1 --workers 50 --timeout 0.8
 ```
 
