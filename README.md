@@ -2,6 +2,8 @@
 
 A lightweight Python TCP port scanner for **authorized security testing and learning**.
 
+[![CI](https://github.com/Blazebropwn/Blazeport/actions/workflows/ci.yml/badge.svg)](https://github.com/Blazebropwn/Blazeport/actions/workflows/ci.yml)
+
 ## Features
 
 - Concurrent TCP connect scanning with a bounded worker pool
